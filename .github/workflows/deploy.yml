@@ -30,7 +30,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./app  # Ruta donde está tu Dockerfile de la aplicación
-          file: ./app/Dockerfile
+          file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/vzeta-app:latest
 
