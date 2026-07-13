@@ -1,41 +1,41 @@
-name: CI/CD VZeta Examen Transversal
+name: CI/CD Vzeta
 
 on:
   push:
-    branches: [ "main" ] # Se activa con cada push a la rama principal
+    branches: [ "main" ]
 
 jobs:
   build-and-push:
-    [cite_start]runs-on: ubuntu-latest # Ejecuta una máquina virtual en los servidores de GitHub 
-
+    runs-on: ubuntu-latest # Esto corre en los servidores de GitHub (CI)
     steps:
-    # 1. Descarga el código de tu repositorio dentro de la máquina de GitHub 
-    - name: Checkout del código
+    - name: Checkout código
       uses: actions/checkout@v4
 
-    # 2. Inicia sesión en Docker Hub de manera segura usando tus Secrets 
-    - name: Autenticación en Docker Hub
+    - name: Login en Docker Hub
       uses: docker/login-action@v3
       with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # 3. Prepara el entorno para compilación avanzada 
-    - name: Configurar Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    # 4. Construye y sube la aplicación web leyendo la carpeta 'app' [cite: 45, 46]
-    - name: Construir y Subir App Web
+    - name: Construir y Subir Imagen
       uses: docker/build-push-action@v5
       with:
-        context: ./app
+        context: .
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/vzeta-app:latest
+        tags: ${{ secrets.DOCKER_USERNAME }}//mi-app-nginx:latest
 
-    # 5. Construye y sube el Proxy Inverso NGINX leyendo la carpeta 'nginx' 
-    - name: Construir y Subir Nginx Proxy
-      uses: docker/build-push-action@v5
-      with:
-        context: ./nginx
-        push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/vzeta-nginx:latest
+  deploy:
+    needs: build-and-push
+    runs-on: self-hosted
+    steps:
+    - name: Desplegar Contenedor localmente
+      run: |
+        docker pull ${{ secrets.DOCKER_USERNAME }}/mi-app-nginx:latest
+        docker stop mi-web || true
+        docker rm mi-web || true
+        
+        # Crear la carpeta para la persistencia en tu usuario local de la VM
+        mkdir -p $HOME/web_data
+        
+        # Correr con Bind Mount
+        docker run -d --name mi-web -p 80:80 -v $HOME/web_data:/usr/share/nginx/html ${{ secrets.DOCKER_USERNAME }}/mi-app-nginx:latest
