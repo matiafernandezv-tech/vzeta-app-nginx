@@ -1,0 +1,41 @@
+name: CI/CD VZeta Examen Transversal
+
+on:
+  push:
+    branches: [ "main" ] # Se activa con cada push a la rama principal
+
+jobs:
+  build-and-push:
+    [cite_start]runs-on: ubuntu-latest # Ejecuta una máquina virtual en los servidores de GitHub 
+
+    steps:
+    # 1. Descarga el código de tu repositorio dentro de la máquina de GitHub 
+    - name: Checkout del código
+      uses: actions/checkout@v4
+
+    # 2. Inicia sesión en Docker Hub de manera segura usando tus Secrets 
+    - name: Autenticación en Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # 3. Prepara el entorno para compilación avanzada 
+    - name: Configurar Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    # 4. Construye y sube la aplicación web leyendo la carpeta 'app' [cite: 45, 46]
+    - name: Construir y Subir App Web
+      uses: docker/build-push-action@v5
+      with:
+        context: ./app
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/vzeta-app:latest
+
+    # 5. Construye y sube el Proxy Inverso NGINX leyendo la carpeta 'nginx' 
+    - name: Construir y Subir Nginx Proxy
+      uses: docker/build-push-action@v5
+      with:
+        context: ./nginx
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/vzeta-nginx:latest
