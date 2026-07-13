@@ -1,5 +1,7 @@
 name: CI/CD VZeta Examen Transversal
 
+FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true
+
 on:
   push:
     branches: [ "main" ] # Se activa automáticamente con cada push a la rama principal
