@@ -1,41 +1,43 @@
-name: CI/CD
+name: CI/CD VZeta Examen Transversal
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main" ] # Se activa automáticamente con cada push a la rama principal
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest # Esto corre en los servidores de GitHub (CI)
+    runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout código
-      uses: actions/checkout@v4
+      # 1. Descarga el código de tu repositorio de GitHub
+      - name: Checkout del código
+        uses: actions/checkout@v4
 
-    - name: Login en Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      # 2. Configura el motor de compilación Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Construir y Subir Imagen
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}//mi-app-nginx:latest
+      # 3. Inicia sesión en Docker Hub de manera segura usando tus Secrets
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  deploy:
-    needs: build-and-push
-    runs-on: self-hosted # ¡CRUCIAL! Esto le dice a GitHub que ejecute los comandos DENTRO de tu VM local
-    steps:
-    - name: Desplegar Contenedor localmente
-      run: |
-        docker pull ${{ secrets.DOCKER_USERNAME }}/mi-app-nginx:latest
-        docker stop mi-web || true
-        docker rm mi-web || true
-        
-        # Crear la carpeta para la persistencia en tu usuario local de la VM
-        mkdir -p $HOME/web_data
-        
-        # Correr con Bind Mount
-        docker run -d --name mi-web -p 80:80 -v $HOME/web_data:/usr/share/nginx/html ${{ secrets.DOCKER_USERNAME }}/mi-app-nginx:latest
+      # 4. Compila y sube la imagen de la Aplicación Web (myapp_container)
+      - name: Build and Push Web App Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app  # Ruta donde está tu Dockerfile de la aplicación
+          file: ./app/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/vzeta-app:latest
+
+      # 5. Compila y sube la imagen de Nginx Reverse Proxy (mynginx_container)
+      - name: Build and Push Nginx Proxy Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./nginx  # Ruta donde está tu archivo nginx.conf y su Dockerfile
+          file: ./nginx/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/vzeta-nginx:latest
