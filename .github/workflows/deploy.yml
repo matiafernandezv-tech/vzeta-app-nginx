@@ -1,6 +1,5 @@
 name: CI/CD VZeta Examen Transversal
 
-FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true
 
 on:
   push:
